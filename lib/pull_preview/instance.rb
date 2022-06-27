@@ -39,7 +39,9 @@ module PullPreview
 
         def setup_swapping
           [
-            "sudo sed -i '/^tmpfs/c\tmpfs       \/dev\/shm    tmpfs   defaults,size=256M  0   0' /etc/fstab",
+            "fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile",
+            "echo '/swapfile none swap sw 0 0' | tee -a /etc/fstab",
+            "echo 'vm.swappiness=10' | tee -  a /etc/sysctl.conf",
             "echo 'vm.vfs_cache_pressure=50' | tee -a /etc/sysctl.conf"
           ]
         end
@@ -356,7 +358,7 @@ module PullPreview
 
     def url
       scheme = (default_port == "443" ? "https" : "http")
-      "#{scheme}://#{basic_auth && basic_auth + '@'}#{public_dns}:#{default_port}"
+      "#{scheme}://#{basic_auth && basic_auth + '@'}#{public_dns}:#{default_port}/"
     end
 
     def ssh_address
