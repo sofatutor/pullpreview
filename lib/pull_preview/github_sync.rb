@@ -8,7 +8,7 @@ module PullPreview
     attr_reader :opts
     attr_reader :always_on
 
-    LABEL = "pullpreview"
+    LABEL = "preview"
 
     def self.run(app_path, opts)
       github_event_name = ENV.fetch("GITHUB_EVENT_NAME")
