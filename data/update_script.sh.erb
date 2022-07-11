@@ -64,7 +64,7 @@ set -o allexport
 source $PULLPREVIEW_ENV_FILE
 set +o allexport
 
-rsync -auz "/tmp$APP_PATH/" $APP_PATH --delete
+rsync -aOuz "/tmp$APP_PATH/" $APP_PATH --delete
 
 cd "$APP_PATH"
 
