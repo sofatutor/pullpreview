@@ -69,7 +69,7 @@ module PullPreview
       end
 
       PullPreview.logger.info "Launching application..."
-      ok = instance.ssh("/tmp/update_script.sh #{remote_tarball_path}")
+      ok = instance.ssh("/tmp/update_script.sh")
 
       puts "::set-output name=url::#{instance.url}"
       puts "::set-output name=host::#{instance.public_ip}"

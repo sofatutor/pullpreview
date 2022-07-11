@@ -330,6 +330,7 @@ module PullPreview
       cmd = "ssh #{"-v " if logger.level == Logger::DEBUG}-o ServerAliveInterval=15 -o IdentitiesOnly=yes -i #{key_file_path} #{ssh_options.join(" ")}"
       logger.info cmd
 
+      ssh "sudo -u ec2user.ec2user mkdir -p #{target}"
       system("rsync -rP --delete -e '#{cmd}' --exclude-from=.dockerignore #{source} #{ssh_address}:#{target}")
     end
 
