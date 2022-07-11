@@ -64,7 +64,7 @@ set -o allexport
 source $PULLPREVIEW_ENV_FILE
 set +o allexport
 
-rsync -aOuz --no-perms --no-owner --no-group "/tmp$APP_PATH/" $APP_PATH --delete
+rsync -aOuz --no-perms --no-owner --no-group --delete --exclude-from=.dockerignore "/tmp$APP_PATH/" $APP_PATH
 
 cd "$APP_PATH"
 
