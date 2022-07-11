@@ -331,7 +331,7 @@ module PullPreview
       logger.debug cmd
 
       ssh "sudo mkdir -p #{target}"
-      system("rsync -azP --no-perms --no-owner --no-group --delete -e '#{cmd}' --exclude-from=.dockerignore #{source} #{ssh_address}:#{target}")
+      system("rsync -azP --no-perms --no-owner --no-group --delete --filter=':- .dockerignore' -e '#{cmd}' #{source} #{ssh_address}:#{target}")
     end
 
     def scp(source, target, mode: "0644")
