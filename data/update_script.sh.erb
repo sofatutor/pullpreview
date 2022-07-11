@@ -3,6 +3,7 @@
 set -e
 set -o pipefail
 
+APP_TARBALL="$1"
 APP_PATH="<%= locals.remote_app_path %>"
 PULLPREVIEW_LAUNCH_COMMAND="<%= locals.custom_launch_command %>"
 PULLPREVIEW_ENV_VARS="<%= locals.custom_env_vars %>"
@@ -11,6 +12,7 @@ PULLPREVIEW_ENV_FILE="/etc/pullpreview/env"
 lock_file="/tmp/update.lock"
 cleanup() {
   rm -f "$lock_file"
+  rm -f "$APP_TARBALL"
 }
 
 trap cleanup EXIT INT TERM
@@ -61,6 +63,8 @@ fi
 set -o allexport
 source $PULLPREVIEW_ENV_FILE
 set +o allexport
+
+rsync -auz "/tmp$APP_PATH/" $APP_PATH --delete
 
 cd "$APP_PATH"
 

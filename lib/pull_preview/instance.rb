@@ -316,7 +316,7 @@ module PullPreview
       })
     end
 
-    def rsync(source: '.', target: '/app')
+    def rsync(source: '.', target: '/tmp/app')
       key_file_path = "/tmp/tempkey"
       cert_key_path = "/tmp/tempkey-cert.pub"
       File.open(key_file_path, "w+") do |f|
