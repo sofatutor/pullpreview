@@ -33,6 +33,7 @@ module PullPreview
           github_sync.update_github_status(:error)
         end
 
+        PullPreview.logger.warn e.message
         sleep seconds
         seconds *= 2
         retry
