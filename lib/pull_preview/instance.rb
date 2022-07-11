@@ -330,7 +330,7 @@ module PullPreview
       cmd = "ssh #{"-v " if logger.level == Logger::DEBUG}-o ServerAliveInterval=15 -o IdentitiesOnly=yes -i #{key_file_path} #{ssh_options.join(" ")}"
       logger.info cmd
 
-      system("rsync -P --delete -e '#{cmd}' #{source} #{ssh_address}:#{target} --exclude-from=.dockerignore")
+      system("rsync -rP --delete -e '#{cmd}' #{source} #{ssh_address}:#{target} --exclude-from=.dockerignore")
     end
 
     def scp(source, target, mode: "0644")
