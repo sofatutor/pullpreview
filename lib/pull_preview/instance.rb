@@ -328,9 +328,9 @@ module PullPreview
       [key_file_path].each{|file| FileUtils.chmod 0600, file}
 
       cmd = "ssh #{"-v " if logger.level == Logger::DEBUG}-o ServerAliveInterval=15 -o IdentitiesOnly=yes -i #{key_file_path} #{ssh_options.join(" ")}"
-      logger.info cmd
+      logger.debug cmd
 
-      ssh "mkdir -p #{target}"
+      ssh "sudo mkdir -p #{target} && sudo chown -R ec2-user.ec2-user #{target}"
       system("rsync -raP --delete -e '#{cmd}' --exclude-from=.dockerignore #{source} #{ssh_address}:#{target}")
     end
 
