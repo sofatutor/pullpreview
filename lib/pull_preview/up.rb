@@ -63,6 +63,7 @@ module PullPreview
       puts
 
       PullPreview.logger.info "Pushing repository at #{app_path.inspect}..."
+      instance.ssh "sudo chown -R ec2-user.ec2-user /tmp/app/"
 
       unless instance.rsync
         raise Error, "Unable to copy application content on instance. Aborting."
