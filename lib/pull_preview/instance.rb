@@ -331,7 +331,7 @@ module PullPreview
       logger.debug cmd
 
       ssh "sudo mkdir -p #{target} && sudo chown -R ec2-user.ec2-user #{target}"
-      system("rsync -rP --no-perms --no-owner --no-group --delete -e '#{cmd}' --exclude-from=.dockerignore #{source} #{ssh_address}:#{target}")
+      system("rsync -r0P --no-perms --no-owner --no-group --delete -e '#{cmd}' --exclude-from=.dockerignore #{source} #{ssh_address}:#{target}")
     end
 
     def scp(source, target, mode: "0644")
