@@ -64,7 +64,6 @@ set -o allexport
 source $PULLPREVIEW_ENV_FILE
 set +o allexport
 
-sudo chown -R ec2-user.ec2-user "/tmp$APP_PATH/"
 sudo rsync -az --no-perms --no-owner --no-group --delete --exclude-from=.dockerignore "/tmp$APP_PATH/" "$APP_PATH"
 
 cd "$APP_PATH"
