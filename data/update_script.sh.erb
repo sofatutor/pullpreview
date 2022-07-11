@@ -3,7 +3,6 @@
 set -e
 set -o pipefail
 
-APP_TARBALL="$1"
 APP_PATH="<%= locals.remote_app_path %>"
 PULLPREVIEW_LAUNCH_COMMAND="<%= locals.custom_launch_command %>"
 PULLPREVIEW_ENV_VARS="<%= locals.custom_env_vars %>"
@@ -12,7 +11,6 @@ PULLPREVIEW_ENV_FILE="/etc/pullpreview/env"
 lock_file="/tmp/update.lock"
 cleanup() {
   rm -f "$lock_file"
-  rm -f "$APP_TARBALL"
 }
 
 trap cleanup EXIT INT TERM
@@ -63,14 +61,6 @@ fi
 set -o allexport
 source $PULLPREVIEW_ENV_FILE
 set +o allexport
-
-cd /
-
-sudo rm -rf "/tmp$APP_PATH"
-sudo mkdir -p "$APP_PATH" "/tmp$APP_PATH"
-sudo chown -R ec2-user.ec2-user "$APP_PATH" "/tmp$APP_PATH"
-tar xzf "$1" -C "/tmp$APP_PATH"
-rsync -auz "/tmp$APP_PATH" / --remove-source-files --delete
 
 cd "$APP_PATH"
 

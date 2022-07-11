@@ -20,11 +20,6 @@ module PullPreview
       aws_region = PullPreview.lightsail.config.region
       instance_name = opts[:name]
 
-      PullPreview.logger.info "Taring up repository at #{app_path.inspect}..."
-      unless system("tar czf /tmp/app.tar.gz --exclude=.git --exclude-from=.dockerignore -C '#{app_path}' .")
-        exit 1
-      end
-
       instance = Instance.new(instance_name, opts)
 
       unless instance.running?
@@ -67,10 +62,9 @@ module PullPreview
       puts "  ssh #{instance.ssh_address}"
       puts
 
-      PullPreview.logger.info "Preparing to push app tarball (#{(File.size("/tmp/app.tar.gz") / 1024.0**2).round(2)}MB)"
-      remote_tarball_path = "/tmp/app-#{Time.now.utc.strftime("%Y%m%d%H%M%S")}.tar.gz"
+      PullPreview.logger.info "Pushing repository at #{app_path.inspect}..."
 
-      unless instance.scp("/tmp/app.tar.gz", remote_tarball_path)
+      unless instance.rsync
         raise Error, "Unable to copy application content on instance. Aborting."
       end
 

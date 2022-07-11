@@ -316,6 +316,23 @@ module PullPreview
       })
     end
 
+    def rsync(source: '.', target: '/app')
+      key_file_path = "/tmp/tempkey"
+      cert_key_path = "/tmp/tempkey-cert.pub"
+      File.open(key_file_path, "w+") do |f|
+        f.puts access_details.private_key
+      end
+      File.open(cert_key_path, "w+") do |f|
+        f.puts access_details.cert_key
+      end
+      [key_file_path].each{|file| FileUtils.chmod 0600, file}
+
+      cmd = "ssh #{"-v " if logger.level == Logger::DEBUG}-o ServerAliveInterval=15 -o IdentitiesOnly=yes -i #{key_file_path} #{ssh_address} #{ssh_options.join(" ")} '#{command}'"
+      logger.debug cmd
+
+      system("rsync -Pav --delete -e '#{cmd}' #{source} #{ssh_address}:#{target} --exclude-from=.dockerignore")
+    end
+
     def scp(source, target, mode: "0644")
       ssh("cat - > #{target} && chmod #{mode} #{target}", input: File.new(source))
     end
