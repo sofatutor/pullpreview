@@ -328,7 +328,7 @@ module PullPreview
       [key_file_path].each{|file| FileUtils.chmod 0600, file}
 
       cmd = "ssh #{"-v " if logger.level == Logger::DEBUG}-o ServerAliveInterval=15 -o IdentitiesOnly=yes -i #{key_file_path} #{ssh_address} #{ssh_options.join(" ")}"
-      logger.debug cmd
+      logger.info cmd
 
       system("rsync -Pav --delete -e '#{cmd}' #{source} #{ssh_address}:#{target} --exclude-from=.dockerignore")
     end
