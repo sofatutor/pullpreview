@@ -46,6 +46,10 @@ inputs:
     description: "Names of private registries to authenticate against. E.g. docker://username:password@ghcr.io"
     required: false
     default: ""
+  deploy_key:
+    description: "Additional public SSH key used for authentication"
+    required: false
+    default: ""
 
 outputs:
   url:

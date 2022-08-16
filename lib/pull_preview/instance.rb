@@ -12,6 +12,7 @@ module PullPreview
     attr_reader :subdomain
     attr_reader :ports
     attr_reader :registries
+    attr_reader :deploy_key
     attr_reader :ip_prefix
     attr_reader :swap_enabled
     alias swap_enabled? swap_enabled
@@ -82,6 +83,7 @@ module PullPreview
       @registries = opts[:registries] || []
       @dns = opts[:dns]
       @ip_prefix = opts.key?(:ip_prefix) ? opts[:ip_prefix] : nil
+      @deploy_key = opts[:deploy_key]
       @ssh_results = []
       @swap_enabled = !opts[:disable_swap]
     end
@@ -91,7 +93,11 @@ module PullPreview
     end
 
     def ssh_public_keys
-      @ssh_public_keys ||= admins.map do |github_username|
+      @ssh_public_keys ||= ([deploy_key] + github_keys).reject { |key| !key || key.empty? }
+    end
+
+    def github_keys
+      @github_keys ||= admins.map do |github_username|
         URI.open("https://github.com/#{github_username}.keys").read.split("\n")
       end.flatten.reject{|key| key.empty?}
     end
