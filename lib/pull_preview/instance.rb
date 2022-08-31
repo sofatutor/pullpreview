@@ -23,7 +23,7 @@ module PullPreview
     end
 
     class Provisioner
-      COMPOSE_VERSION = "1.29.2".freeze
+      COMPOSE_VERSION = "v2.10.2".freeze
 
       class << self
         def ssh_access(ssh_public_key)
