@@ -146,7 +146,7 @@ module PullPreview
 
     def init_from_snapshot_command
       [
-        "service docker restart"
+        "pkill -9 docker ; pkill -9 containerd ; rm -f /var/run/docker/containerd/containerd.pid ; service docker start"
       ].join(" && ")
     end
 
