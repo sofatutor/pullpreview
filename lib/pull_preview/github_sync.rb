@@ -28,7 +28,7 @@ module PullPreview
         seconds ||= 0.2
         github_sync.sync!
       rescue => e
-        if seconds > 10
+        if seconds > 30
           raise e
           github_sync.update_github_status(:error)
         end
