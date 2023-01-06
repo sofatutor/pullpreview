@@ -4,6 +4,15 @@
 - Add optional `PULLPREVIEW_ENV_VARS` environment variable, which can be passed through, to set any environment variables during launch/update.
 - Add optional `PULLPREVIEW_LAUNCH_COMMAND` environment variable, which can be passed through, to replace docker-compose launch/update commands.
 
+## v5 - updated on 20221108
+
+- Fix pr_push event
+
+## v5 - updated on 20221104
+
+- Return :ignored action when no other action can be guessed.
+- Update system packages before running docker-compose.
+- Prune volumes before starting.
 - Add automated cleanup for dangling resources, to be launched as a scheduled job.
 
 ## v5 - updated on 20211201

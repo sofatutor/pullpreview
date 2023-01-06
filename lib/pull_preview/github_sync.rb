@@ -152,12 +152,15 @@ module PullPreview
       end
 
       if push? || pr_synchronize?
-        return :pr_push if pr_has_label?(LABEL)
-
-        PullPreview.logger.info "Unable to find label #{LABEL} on PR##{pr_number}"
+        if pr_has_label?(LABEL)
+          return :pr_push
+        else
+          PullPreview.logger.info "Unable to find label #{LABEL} on PR##{pr_number}"
+          return :ignored
+        end
       end
 
-      :ignored # default: ignore all other actions
+      :ignored
     end
 
     def commit_status_for(status)
