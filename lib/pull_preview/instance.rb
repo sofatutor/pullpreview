@@ -246,17 +246,15 @@ module PullPreview
           raise Error, "Invalid registry" if uri.host.nil? || uri.scheme != "docker"
           username = uri.user
           password = uri.password
-          if password.nil?
-            password = username
-            username = "doesnotmatter"
+          if username && password
+            tmpfile.puts 'echo "Logging into %{host}..."' % { host: uri.host }
+            # https://docs.github.com/en/packages/guides/using-github-packages-with-github-actions#upgrading-a-workflow-that-accesses-ghcrio
+            tmpfile.puts 'echo "%{password}" | docker login %{host} -u "%{username}" --password-stdin' % {
+              host: uri.host.end_with?('docker.io') ? nil : '"' + uri.host + '"',
+              username: username,
+              password: password,
+            }
           end
-          tmpfile.puts 'echo "Logging into %{host}..."' % { host: uri.host }
-          # https://docs.github.com/en/packages/guides/using-github-packages-with-github-actions#upgrading-a-workflow-that-accesses-ghcrio
-          tmpfile.puts 'echo "%{password}" | docker login %{host} -u "%{username}" --password-stdin' % {
-            host: uri.host.end_with?('docker.io') ? nil : '"' + uri.host + '"',
-            username: username,
-            password: password,
-          }
         rescue URI::Error, Error => e
           logger.warn "Registry ##{index} is invalid: #{e.message}"
         end
