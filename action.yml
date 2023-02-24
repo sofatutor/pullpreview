@@ -61,7 +61,7 @@ outputs:
 
 runs:
   using: "docker"
-  image: ghcr.io/sofatutor/pullpreview:sofatutor
+  image: docker://ghcr.io/sofatutor/pullpreview:sofatutor
   args:
     - "github-sync"
     - "${{ inputs.app_path }}"
