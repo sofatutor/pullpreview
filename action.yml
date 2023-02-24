@@ -61,7 +61,7 @@ outputs:
 
 runs:
   using: "docker"
-  image: ghcr.io/${{ github.event.repository.owner.name }}/pullpreview
+  image: ghcr.io/${{ github.event.repository.owner.name }}/pullpreview:sofatutor
   args:
     - "github-sync"
     - "${{ inputs.app_path }}"
