@@ -4,6 +4,10 @@
 - Add optional `PULLPREVIEW_ENV_VARS` environment variable, which can be passed through, to set any environment variables during launch/update.
 - Add optional `PULLPREVIEW_LAUNCH_COMMAND` environment variable, which can be passed through, to replace docker-compose launch/update commands.
 
+## v5 - updated on 20230110
+
+- Switch to using amazon linux 2 since the old blueprint became unavailable (#34)
+
 ## v5 - updated on 20221108
 
 - Fix pr_push event
