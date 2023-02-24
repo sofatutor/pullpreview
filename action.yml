@@ -61,7 +61,7 @@ outputs:
 
 runs:
   using: "docker"
-  image: "Dockerfile"
+  image: ghcr.io/${{ github.event.repository.owner.name }}/pullpreview
   args:
     - "github-sync"
     - "${{ inputs.app_path }}"
