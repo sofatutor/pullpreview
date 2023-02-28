@@ -330,7 +330,8 @@ module PullPreview
     end
 
     def ssh(command, input: nil)
-      system(ssh_command(command, input: input)).tap {|result| @ssh_results.push([cmd, result])}
+      cmd = ssh_command(command, input: input)
+      system(cmd).tap {|result| @ssh_results.push([cmd, result])}
     end
 
     def ssh_command(command, input: nil)
@@ -348,6 +349,7 @@ module PullPreview
       if input && input.respond_to?(:path)
         cmd = "cat #{input.path} | #{cmd}"
       end
+      logger.debug cmd
 
       cmd
     end
