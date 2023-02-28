@@ -64,7 +64,7 @@ module PullPreview
       remote_tarball_path = "/tmp/app-#{Time.now.utc.strftime("%Y%m%d%H%M%S")}.tar.gz"
 
       PullPreview.logger.info "Uploading app tarball..."
-      unless instance.tar_upload(app_path, remote_tarball_path)
+      unless instance.tar_upload(remote_tarball_path)
         raise Error, "Unable to copy application content on instance. Aborting."
       end
 
