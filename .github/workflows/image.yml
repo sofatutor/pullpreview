@@ -13,7 +13,6 @@ on:
   push:
     branches:
       - sofatutor
-      - sofatutor-tar-upload
     tags:
       - "v*"
 
