@@ -58,7 +58,7 @@ module PullPreview
 
       puts
       puts "To connect to the instance (authorized GitHub users: #{instance.admins.join(", ")}):"
-      puts "  ssh #{instance.ssh_address}"
+      puts "ssh #{instance.ssh_address}"
       puts
 
       remote_tarball_path = "/tmp/app-#{Time.now.utc.strftime("%Y%m%d%H%M%S")}.tar.gz"
@@ -69,7 +69,7 @@ module PullPreview
       end
 
       size_fetch_command = instance.ssh_command("du -sh #{remote_tarball_path}")
-      puts "Successfully uploaded " + `#{size_fetch_command}`[/[^ ]+/]
+      PullPreview.logger.info "Successfully uploaded " + `#{size_fetch_command}`[/\S+/]
 
       PullPreview.logger.info "Launching application..."
       ok = instance.ssh("/tmp/update_script.sh #{remote_tarball_path}")
