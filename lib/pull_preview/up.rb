@@ -99,6 +99,7 @@ module PullPreview
       if ok
         instance
       else
+        instance.ssh 'cd /app && docker-compose logs --tail 1000'
         raise Error, "Trying to launch the application failed. Please see the logs above to troubleshoot the issue and for informations on how to connect to the instance"
       end
     end
