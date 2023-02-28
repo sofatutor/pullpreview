@@ -322,7 +322,7 @@ module PullPreview
     end
 
     def tar_upload(app_folder, remote_tarball_path)
-      system "tar --exclude=.git --exclude-from=.dockerignore -cvzf - #{app_folder} | #{ssh_command('cat > ' + remote_tarball_path)}"
+      system "tar --exclude=.git --exclude-from=.dockerignore -czf - #{app_folder} | #{ssh_command('cat > ' + remote_tarball_path)}"
     end
 
     def scp(source, target, mode: "0644")
