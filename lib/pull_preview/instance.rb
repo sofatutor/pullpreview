@@ -321,11 +321,19 @@ module PullPreview
       })
     end
 
+    def tar_upload(app_folder, remote_tarball_path)
+      system "tar --exclude=.git --exclude-from=.dockerignore -cvzf - #{app_folder} | #{ssh_command('cat > ' + remote_tarball_path)}"
+    end
+
     def scp(source, target, mode: "0644")
       ssh("cat - > #{target} && chmod #{mode} #{target}", input: File.new(source))
     end
 
     def ssh(command, input: nil)
+      system(ssh_command(command, input: input)).tap {|result| @ssh_results.push([cmd, result])}
+    end
+
+    def ssh_command(command, input: nil)
       key_file_path = "/tmp/tempkey"
       cert_key_path = "/tmp/tempkey-cert.pub"
       File.open(key_file_path, "w+") do |f|
@@ -340,8 +348,8 @@ module PullPreview
       if input && input.respond_to?(:path)
         cmd = "cat #{input.path} | #{cmd}"
       end
-      logger.debug cmd
-      system(cmd).tap {|result| @ssh_results.push([cmd, result])}
+
+      cmd
     end
 
     def username
