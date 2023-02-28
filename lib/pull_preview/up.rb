@@ -68,6 +68,8 @@ module PullPreview
         raise Error, "Unable to copy application content on instance. Aborting."
       end
 
+      puts "Successfully uploaded " + `instance.ssh_command("du -sh #{remote_tarball_path}")`[/[^ ]+/]
+
       PullPreview.logger.info "Launching application..."
       ok = instance.ssh("/tmp/update_script.sh #{remote_tarball_path}")
 
