@@ -61,10 +61,10 @@ module PullPreview
       puts "  ssh #{instance.ssh_address}"
       puts
 
-      PullPreview.logger.info "Preparing to push app tarball (#{(File.size("/tmp/app.tar.gz") / 1024.0**2).round(2)}MB)"
       remote_tarball_path = "/tmp/app-#{Time.now.utc.strftime("%Y%m%d%H%M%S")}.tar.gz"
 
-      unless instance.tar_upload(app_folder, remote_tarball_path)
+      PullPreview.logger.info "Uploading app tarball..."
+      unless instance.tar_upload(app_path, remote_tarball_path)
         raise Error, "Unable to copy application content on instance. Aborting."
       end
 
