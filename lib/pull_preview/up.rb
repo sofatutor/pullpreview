@@ -74,9 +74,9 @@ module PullPreview
       PullPreview.logger.info "Launching application..."
       ok = instance.ssh("/tmp/update_script.sh #{remote_tarball_path}")
 
-      puts "::set-output name=url::#{instance.url}"
-      puts "::set-output name=host::#{instance.public_ip}"
-      puts "::set-output name=username::#{instance.username}"
+      puts "echo url=#{instance.url} >> $GITHUB_OUTPUT"
+      puts "echo host=#{instance.public_ip} >> $GITHUB_OUTPUT"
+      puts "echo username=#{instance.username} >> $GITHUB_OUTPUT"
 
       puts
       puts "You can access your application at the following URL:"
