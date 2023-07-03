@@ -12,10 +12,57 @@ module PullPreview
     attr_reader :subdomain
     attr_reader :ports
     attr_reader :registries
+    attr_reader :deploy_key
+    attr_reader :ip_prefix
+    attr_reader :swap_enabled
+    alias swap_enabled? swap_enabled
 
     class << self
       attr_accessor :client
       attr_accessor :logger
+    end
+
+    class Provisioner
+      COMPOSE_VERSION = "v2.10.2".freeze
+
+      class << self
+        def ssh_access(ssh_public_key)
+          %{echo '#{ssh_public_key}' > /home/ec2-user/.ssh/authorized_keys}
+        end
+
+        def prepare_user(remote_app_path)
+          [
+            "mkdir -p #{remote_app_path} && chown -R ec2-user.ec2-user #{remote_app_path}",
+            "echo 'cd #{remote_app_path}' > /etc/profile.d/pullpreview.sh",
+            "echo '[[ -f /etc/pullpreview/env ]] && set -o allexport; source /etc/pullpreview/env; set +o allexport' >> /etc/profile.d/pullpreview.sh"
+          ]
+        end
+
+        def setup_swapping
+          [
+            "fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile",
+            "echo '/swapfile none swap sw 0 0' | tee -a /etc/fstab",
+            "echo 'vm.swappiness=10' | tee -  a /etc/sysctl.conf",
+            "echo 'vm.vfs_cache_pressure=50' | tee -a /etc/sysctl.conf"
+          ]
+        end
+
+        def install_and_setup_docker
+          [
+            "yum install -y docker",
+            %{curl -L "https://github.com/docker/compose/releases/download/#{COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose},
+            "chmod +x /usr/local/bin/docker-compose",
+            "usermod -aG docker ec2-user",
+            "service docker start",
+            "echo 'docker image prune -a --filter=\"until=96h\" --force' > /etc/cron.daily/docker-prune && chmod a+x /etc/cron.daily/docker-prune",
+            "systemctl enable docker"
+          ]
+        end
+
+        def finish_setup
+          "mkdir -p /etc/pullpreview && touch /etc/pullpreview/ready && chown -R ec2-user:ec2-user /etc/pullpreview"
+        end
+      end
     end
 
     def self.normalize_name(name)
@@ -36,7 +83,10 @@ module PullPreview
       @compose_files = opts[:compose_files] || ["docker-compose.yml"]
       @registries = opts[:registries] || []
       @dns = opts[:dns]
+      @ip_prefix = opts.key?(:ip_prefix) ? opts[:ip_prefix] : nil
+      @deploy_key = opts[:deploy_key]
       @ssh_results = []
+      @swap_enabled = !opts[:disable_swap]
     end
 
     def remote_app_path
@@ -44,7 +94,11 @@ module PullPreview
     end
 
     def ssh_public_keys
-      @ssh_public_keys ||= admins.map do |github_username|
+      @ssh_public_keys ||= ([deploy_key] + github_keys).reject { |key| !key || key.empty? }
+    end
+
+    def github_keys
+      @github_keys ||= admins.map do |github_username|
         URI.open("https://github.com/#{github_username}.keys").read.split("\n")
       end.flatten.reject{|key| key.empty?}
     end
@@ -78,40 +132,38 @@ module PullPreview
       if latest_snapshot
         logger.info "Found snapshot to restore from: #{latest_snapshot.name}"
         logger.info "Creating new instance name=#{name}..."
-        client.create_instances_from_snapshot(params.merge({
-          user_data: [
-            "service docker restart"
-          ].join(" && "),
-          instance_snapshot_name: latest_snapshot.name,
-        }))
+        client.create_instances_from_snapshot(params.merge(
+          user_data: init_from_snapshot_command,
+          instance_snapshot_name: latest_snapshot.name
+        ))
       else
         logger.info "Creating new instance name=#{name}..."
-        client.create_instances(params.merge({
-          user_data: [
-            %{echo '#{ssh_public_keys.join("\n")}' > /home/ec2-user/.ssh/authorized_keys},
-            "mkdir -p #{REMOTE_APP_PATH} && chown -R ec2-user.ec2-user #{REMOTE_APP_PATH}",
-            "echo 'cd #{REMOTE_APP_PATH}' > /etc/profile.d/pullpreview.sh",
-            "fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile",
-            "echo '/swapfile none swap sw 0 0' | tee -a /etc/fstab",
-            "sysctl vm.swappiness=10 && sysctl vm.vfs_cache_pressure=50",
-            "echo 'vm.swappiness=10' | tee -a /etc/sysctl.conf",
-            "echo 'vm.vfs_cache_pressure=50' | tee -a /etc/sysctl.conf",
-            "yum install -y docker",
-            %{curl -L "https://github.com/docker/compose/releases/download/1.25.4/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose},
-            "chmod +x /usr/local/bin/docker-compose",
-            "usermod -aG docker ec2-user",
-            "service docker start",
-            "echo 'docker image prune -a --filter=\"until=96h\" --force' > /etc/cron.daily/docker-prune && chmod a+x /etc/cron.daily/docker-prune",
-            "mkdir -p /etc/pullpreview && touch /etc/pullpreview/ready && chown -R ec2-user:ec2-user /etc/pullpreview",
-          ].join(" && "),
+        client.create_instances(params.merge(
+          user_data: setup_command,
           blueprint_id: blueprint_id
-        }))
+        ))
       end
+    end
+
+    def init_from_snapshot_command
+      [
+        "pkill -9 docker ; pkill -9 containerd ; rm -f /var/run/docker/containerd/containerd.pid ; service docker start"
+      ].join(" && ")
+    end
+
+    def setup_command
+      [
+        Provisioner.ssh_access(ssh_public_keys.first),
+        Provisioner.prepare_user(REMOTE_APP_PATH),
+        swap_enabled? ? Provisioner.setup_swapping : nil,
+        Provisioner.install_and_setup_docker,
+        Provisioner.finish_setup
+      ].flatten.reject(&:empty?).join(" && ")
     end
 
     def latest_snapshot
       @latest_snapshot ||= client.get_instance_snapshots.instance_snapshots.sort{|a,b| b.created_at <=> a.created_at}.find do |snap|
-        snap.state == "available" && snap.from_instance_name == name
+        snap.state == "available" && (snap.name == snapshot_name || snap.from_instance_name == name)
       end
     end
 
@@ -132,7 +184,25 @@ module PullPreview
         public_dns: public_dns,
         admins: admins,
         url: url,
+        custom_launch_command: custom_launch_command,
+        custom_env_vars: custom_env_vars
       )
+    end
+
+    def basic_auth
+      ENV.fetch("BASIC_AUTH", nil)
+    end
+
+    def custom_launch_command
+      ENV.fetch("PULLPREVIEW_LAUNCH_COMMAND", "")
+    end
+
+    def custom_env_vars
+      ENV.fetch("PULLPREVIEW_ENV_VARS", "")
+    end
+
+    def snapshot_name
+      ENV.fetch("PULLPREVIEW_SNAPSHOT_NAME", "")
     end
 
     def github_token
@@ -177,17 +247,15 @@ module PullPreview
           raise Error, "Invalid registry" if uri.host.nil? || uri.scheme != "docker"
           username = uri.user
           password = uri.password
-          if password.nil?
-            password = username
-            username = "doesnotmatter"
+          if username && password
+            tmpfile.puts 'echo "Logging into %{host}..."' % { host: uri.host }
+            # https://docs.github.com/en/packages/guides/using-github-packages-with-github-actions#upgrading-a-workflow-that-accesses-ghcrio
+            tmpfile.puts 'echo "%{password}" | docker login %{host} -u "%{username}" --password-stdin' % {
+              host: uri.host.end_with?('docker.io') ? nil : '"' + uri.host + '"',
+              username: username,
+              password: password,
+            }
           end
-          tmpfile.puts 'echo "Logging into ghcr.io..."'
-          # https://docs.github.com/en/packages/guides/using-github-packages-with-github-actions#upgrading-a-workflow-that-accesses-ghcrio
-          tmpfile.puts 'echo "%{password}" | docker login "%{host}" -u "%{username}" --password-stdin' % {
-            host: uri.host,
-            username: username,
-            password: password,
-          }
         rescue URI::Error, Error => e
           logger.warn "Registry ##{index} is invalid: #{e.message}"
         end
@@ -253,11 +321,20 @@ module PullPreview
       })
     end
 
+    def tar_upload(remote_tarball_path)
+      system "tar --exclude=.git --exclude-from=.dockerignore -czf - . | #{ssh_command('cat - > ' + remote_tarball_path)}"
+    end
+
     def scp(source, target, mode: "0644")
       ssh("cat - > #{target} && chmod #{mode} #{target}", input: File.new(source))
     end
 
     def ssh(command, input: nil)
+      cmd = ssh_command(command, input: input)
+      system(cmd).tap {|result| @ssh_results.push([cmd, result])}
+    end
+
+    def ssh_command(command, input: nil)
       key_file_path = "/tmp/tempkey"
       cert_key_path = "/tmp/tempkey-cert.pub"
       File.open(key_file_path, "w+") do |f|
@@ -273,7 +350,8 @@ module PullPreview
         cmd = "cat #{input.path} | #{cmd}"
       end
       logger.debug cmd
-      system(cmd).tap {|result| @ssh_results.push([cmd, result])}
+
+      cmd
     end
 
     def username
@@ -286,16 +364,16 @@ module PullPreview
 
     def public_dns
       # https://community.letsencrypt.org/t/a-certificate-for-a-63-character-domain/78870/4
-      remaining_chars_for_subdomain = 62 - dns.size - public_ip.size - "ip".size - ("." * 3).size
+      remaining_chars_for_subdomain = 62 - dns.size - public_ip.size - (ip_prefix&.size || 0) - ("." * 3).size
       [
-        [subdomain[0..remaining_chars_for_subdomain], "ip", public_ip.gsub(".", "-")].join("-"),
+        [subdomain[0..remaining_chars_for_subdomain], ip_prefix, public_ip.gsub(".", "-")].compact.join("-"),
         dns
       ].join(".")
     end
 
     def url
       scheme = (default_port == "443" ? "https" : "http")
-      "#{scheme}://#{public_dns}:#{default_port}"
+      "#{scheme}://#{basic_auth && basic_auth + '@'}#{public_dns}:#{default_port}/"
     end
 
     def ssh_address

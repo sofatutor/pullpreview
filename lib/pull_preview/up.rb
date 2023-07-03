@@ -19,12 +19,6 @@ module PullPreview
 
       aws_region = PullPreview.lightsail.config.region
       instance_name = opts[:name]
-
-      PullPreview.logger.info "Taring up repository at #{app_path.inspect}..."
-      unless system("tar czf /tmp/app.tar.gz --exclude .git -C '#{app_path}' .")
-        exit 1
-      end
-
       instance = Instance.new(instance_name, opts)
 
       unless instance.running?
@@ -46,11 +40,11 @@ module PullPreview
               (2..3).include?(bundle.ram_size_in_gb) &&
               bundle.supported_platforms.include?("LINUX_UNIX")
           else
-            bundle.bundle_id == opts[:instance_type]
+            bundle.bundle_id =~ /^#{opts[:instance_type]}/i
           end
         end.bundle_id
 
-        instance.launch(azs.first, bundle_id, blueprint_id, tags)
+        instance.launch(azs.sample, bundle_id, blueprint_id, tags)
         instance.wait_until_running!
         sleep 2
       end
@@ -64,22 +58,25 @@ module PullPreview
 
       puts
       puts "To connect to the instance (authorized GitHub users: #{instance.admins.join(", ")}):"
-      puts "  ssh #{instance.ssh_address}"
+      puts "ssh #{instance.ssh_address}"
       puts
 
-      PullPreview.logger.info "Preparing to push app tarball (#{(File.size("/tmp/app.tar.gz") / 1024.0**2).round(2)}MB)"
       remote_tarball_path = "/tmp/app-#{Time.now.utc.strftime("%Y%m%d%H%M%S")}.tar.gz"
 
-      unless instance.scp("/tmp/app.tar.gz", remote_tarball_path)
+      PullPreview.logger.info "Uploading app tarball..."
+      unless instance.tar_upload(remote_tarball_path)
         raise Error, "Unable to copy application content on instance. Aborting."
       end
+
+      size_fetch_command = instance.ssh_command("du -sh #{remote_tarball_path}")
+      PullPreview.logger.info "Successfully uploaded " + `#{size_fetch_command}`[/\S+/]
 
       PullPreview.logger.info "Launching application..."
       ok = instance.ssh("/tmp/update_script.sh #{remote_tarball_path}")
 
-      puts "::set-output name=url::#{instance.url}"
-      puts "::set-output name=host::#{instance.public_ip}"
-      puts "::set-output name=username::#{instance.username}"
+      puts "echo url=#{instance.url} >> $GITHUB_OUTPUT"
+      puts "echo host=#{instance.public_ip} >> $GITHUB_OUTPUT"
+      puts "echo username=#{instance.username} >> $GITHUB_OUTPUT"
 
       puts
       puts "You can access your application at the following URL:"
@@ -99,6 +96,7 @@ module PullPreview
       if ok
         instance
       else
+        instance.ssh 'cd /app && docker-compose logs --tail 100'
         raise Error, "Trying to launch the application failed. Please see the logs above to troubleshoot the issue and for informations on how to connect to the instance"
       end
     end
