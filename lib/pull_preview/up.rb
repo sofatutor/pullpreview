@@ -40,7 +40,7 @@ module PullPreview
               (2..3).include?(bundle.ram_size_in_gb) &&
               bundle.supported_platforms.include?("LINUX_UNIX")
           else
-            bundle.bundle_id == opts[:instance_type]
+            bundle.bundle_id =~ /^#{opts[:instance_type]}/i
           end
         end.bundle_id
 
