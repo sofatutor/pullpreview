@@ -1,5 +1,5 @@
-name: "PullPreview"
-description: "Automatically spin and maintain preview environments for your pull requests"
+name: "Preview Environments for GitHub"
+description: "Ephemeral preview deployments of your app for every pull request. Just using Docker Compose. In your AWS account."
 author: "Cyril Rohr"
 branding:
   icon: anchor
@@ -15,13 +15,16 @@ inputs:
   dns:
     description: "Which DNS suffix to use"
     default: "my.pullpreview.com"
+  label:
+    description: "Label to use for triggering preview deployments"
+    default: "pullpreview"
   github_token:
     description: "The personal access token used to update the status of your commit"
     default: "${{ github.token }}"
   admins:
     description: "Logins of GitHub users that will have their SSH key installed on the instance, comma-separated"
     required: false
-    default: ""
+    default: "@collaborators/push"
   ports:
     description: "Ports to open for external access on the preview server (port 22 is always open), comma-separated"
     required: false
@@ -38,14 +41,34 @@ inputs:
     description: "Compose files to use when running docker-compose up, comma-separated"
     required: false
     default: "docker-compose.yml"
+  compose_options:
+    description: "Additional options to pass to docker-compose up, comma-separated"
+    required: false
+    default: "--build"
+  license:
+    description: "PullPreview license"
+    required: false
+    default: ""
   instance_type:
     description: "Instance type to use"
     required: false
-    default: "small_2_0"
+    default: "small"
+  deployment_variant:
+    description: "Deployment variant, which allows launching multiple deployments per PR (4 chars max)"
+    required: false
+    default: ""
+  provider:
+    description: "Cloud provider to use: lightsail"
+    required: false
+    default: "lightsail"
   registries:
     description: "Names of private registries to authenticate against. E.g. docker://username:password@ghcr.io"
     required: false
     default: ""
+  ttl:
+    description: "Maximum time to live for deployments (e.g. 10h, 5d, infinite)"
+    required: false
+    default: "infinite"
 
 outputs:
   url:
@@ -67,8 +90,12 @@ runs:
     - "${{ inputs.cidrs }}"
     - "--compose-files"
     - "${{ inputs.compose_files }}"
+    - "--compose-options"
+    - "${{ inputs.compose_options }}"
     - "--dns"
     - "${{ inputs.dns }}"
+    - "--label"
+    - "${{ inputs.label }}"
     - "--ports"
     - "${{ inputs.ports }}"
     - "--default-port"
@@ -77,7 +104,13 @@ runs:
     - "${{ inputs.always_on }}"
     - "--instance-type"
     - "${{ inputs.instance_type }}"
+    - "--deployment-variant"
+    - "${{ inputs.deployment_variant }}"
     - "--registries"
     - "${{ inputs.registries }}"
+    - "--ttl"
+    - "${{ inputs.ttl }}"
   env:
     GITHUB_TOKEN: "${{ inputs.github_token }}"
+    PULLPREVIEW_LICENSE: "${{ inputs.license }}"
+    PULLPREVIEW_PROVIDER: "${{ inputs.provider }}"

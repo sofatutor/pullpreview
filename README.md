@@ -2,6 +2,9 @@
 
 A GitHub Action that starts live environments for your pull requests and branches.
 
+[![pullpreview](https://github.com/pullpreview/action/actions/workflows/pullpreview.yml/badge.svg)](https://github.com/pullpreview/action/actions/workflows/pullpreview.yml)
+<a href="https://news.ycombinator.com/item?id=23221471"><img src="https://img.shields.io/badge/Hacker%20News-83-%23FF6600" alt="Hacker News"></a>
+
 ## Spin environments in one click
 
 Once installed in your repository, this action is triggered any time a change
@@ -105,12 +108,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: pullpreview/action@v5
         with:
           # Those GitHub users will have SSH access to the servers
           admins: crohr,other-github-user
-          # A staging environment will always exist for the master branch
+          # A preview environment will always exist for the main branch
           always_on: main
           # Use the cidrs option to restrict access to the live environments to specific IP ranges
           cidrs: "0.0.0.0/0"
@@ -119,7 +122,7 @@ jobs:
           # The preview URL will target this port
           default_port: 80
           # Use a 512MB RAM instance type instead of the default 2GB
-          instance_type: nano_2_0
+          instance_type: nano
           # Ports to open on the server
           ports: 80,5432
         env:
