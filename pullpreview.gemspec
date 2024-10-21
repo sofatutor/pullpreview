@@ -1,6 +1,6 @@
 Gem::Specification.new do |spec|
   spec.name               = "pullpreview"
-  spec.version            = "0.0.2"
+  spec.version            = "0.0.3"
 
   spec.authors = ["Cyril Rohr", "Manuel Fittko"]
   spec.date = "2021-10-19"
@@ -13,6 +13,6 @@ Gem::Specification.new do |spec|
   spec.required_ruby_version = ">= 2.4.0"
   spec.add_dependency "aws-sdk-lightsail", "~> 1.30"
   spec.add_dependency "slop", "~> 4.8"
-  spec.add_dependency "octokit", "~> 4.18"
-  spec.add_dependency "terminal-table", "~> 1.8"
+  spec.add_dependency "octokit", "~> 4.11.88"
+  spec.add_dependency "terminal-table", "~> 3.0.2"
 end
