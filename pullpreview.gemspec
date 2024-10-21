@@ -11,8 +11,8 @@ Gem::Specification.new do |spec|
   spec.homepage = "https://pullpreview.com/"
   spec.summary = "pullpreview!"
   spec.required_ruby_version = ">= 2.4.0"
-  spec.add_dependency "aws-sdk-lightsail", "~> 1.30"
-  spec.add_dependency "slop", "~> 4.8"
-  spec.add_dependency "octokit", "~> 4.11.88"
-  spec.add_dependency "terminal-table", "~> 3.0.2"
+  spec.add_dependency "aws-sdk-lightsail", "~> 1.32"
+  spec.add_dependency "slop", "~> 4.10"
+  spec.add_dependency "octokit", "~> 4.22"
+  spec.add_dependency "terminal-table", "~> 3.0"
 end
